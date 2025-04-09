@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎓 Degree Validation dApp</title>
+</head>
+<body>
+    <h2>🎓 University Degree Validation</h2>
+
+    <button onclick="connectWallet()">🔗 Connect MetaMask</button>
+    <p id="walletAddress"></p>
+    <hr>
+
+    <h3>✅ Verify Degree</h3>
+    <input id="v_student" placeholder="Student Name">
+    <input id="v_course" placeholder="Course">
+    <input id="v_year" type="number" placeholder="Year">
+    <button onclick="verifyDegree()">Verify</button>
+    <p id="verifyResult"></p>
+
+    <hr>
+
+    <h3>🏫 Accredit University (Admin Only)</h3>
+    <input id="acc_address" placeholder="University Wallet Address">
+    <input id="acc_name" placeholder="University Name">
+    <button onclick="accreditUniversity()">Accredit</button>
+    <p id="accreditResult"></p>
+
+    <hr>
+
+    <h3>📜 Issue Degree (University)</h3>
+    <input id="i_student" placeholder="Student Name">
+    <input id="i_course" placeholder="Course">
+    <input id="i_year" type="number" placeholder="Year">
+    <button onclick="issueDegree()">Issue Degree</button>
+    <p id="issueResult"></p>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
+    <script>
+        const contractAddress = "0x2Ac5C70096421CCc624DCBd109Fc9137A0440b68"; // Replace with your deployed address
+        const abi = [
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_uniAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "_name",
+				"type": "string"
+			}
+		],
+		"name": "accreditUniversity",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_studentName",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_course",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_year",
+				"type": "uint256"
+			}
+		],
+		"name": "issueDegree",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "admin",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "degrees",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "studentName",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "course",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "year",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "university",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "universities",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isAccredited",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_studentName",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_course",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_year",
+				"type": "uint256"
+			}
+		],
+		"name": "verifyDegree",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]; // Paste ABI here
+
+        let web3;
+        let contract;
+        let accounts;
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                await window.ethereum.request({ method: "eth_requestAccounts" });
+                accounts = await web3.eth.getAccounts();
+                contract = new web3.eth.Contract(abi, contractAddress);
+                document.getElementById("walletAddress").innerText = "Connected: " + accounts[0];
+            } else {
+                alert("MetaMask not found!");
+            }
+        }
+
+        async function verifyDegree() {
+            const name = document.getElementById("v_student").value;
+            const course = document.getElementById("v_course").value;
+            const year = document.getElementById("v_year").value;
+
+            try {
+                const result = await contract.methods.verifyDegree(name, course, year).call();
+                if (result[0]) {
+                    document.getElementById("verifyResult").innerText =
+                        `✅ Valid degree issued by ${result[2]}`;
+                } else {
+                    document.getElementById("verifyResult").innerText = "❌ No such degree found.";
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById("verifyResult").innerText = "⚠️ Error during verification.";
+            }
+        }
+
+        async function accreditUniversity() {
+            const addr = document.getElementById("acc_address").value;
+            const name = document.getElementById("acc_name").value;
+
+            try {
+                await contract.methods.accreditUniversity(addr, name).send({ from: accounts[0] });
+                document.getElementById("accreditResult").innerText = `✅ University accredited!`;
+            } catch (err) {
+                console.error(err);
+                document.getElementById("accreditResult").innerText = "❌ Accreditation failed.";
+            }
+        }
+
+        async function issueDegree() {
+            const name = document.getElementById("i_student").value;
+            const course = document.getElementById("i_course").value;
+            const year = document.getElementById("i_year").value;
+
+            try {
+                await contract.methods.issueDegree(name, course, year).send({ from: accounts[0] });
+                document.getElementById("issueResult").innerText = "✅ Degree issued successfully.";
+            } catch (err) {
+                console.error(err);
+                document.getElementById("issueResult").innerText = "❌ Failed to issue degree.";
+            }
+        }
+    </script>
+</body>
+</html>
